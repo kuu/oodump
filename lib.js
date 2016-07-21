@@ -2,6 +2,7 @@ const config = require('config');
 const OoyalaApi = require('ooyala-api').default;
 const throughParallel = require('through2-parallel');
 const fromArray = require('from2-array');
+
 const api = new OoyalaApi(config.api.key, config.api.secret);
 
 function createStream(concurrency, transformFunction, flushFunction) {
@@ -11,7 +12,7 @@ function createStream(concurrency, transformFunction, flushFunction) {
 module.exports = function (opts) {
   const START_DATE = opts.startDate || '2012-07-12';
   const END_DATE = opts.endDate || '2016-06-30';
-  const isDaily = !!opts.daily;
+  const isDaily = Boolean(opts.daily);
 
   // Retrieves assets with a specific label
   const stream1 = createStream(1, function (label, enc, cb) {
@@ -51,7 +52,10 @@ module.exports = function (opts) {
     const flags = isDaily ? {breakdown_by: 'day'} : {};
     api.get(requestURL, flags)
     .then(body => {
-      const performance = body.results ? (isDaily ? body.results.total : body.results) : null;
+      let performance = null;
+      if (body.results) {
+        performance = isDaily ? body.results.total : body.results;
+      }
       this.push({
         label: asset.label,
         embedCode: asset.embed_code,
@@ -83,7 +87,7 @@ module.exports = function (opts) {
       performance.forEach(day => {
         const metrics = day.metrics;
         if (metrics.video && metrics.video.plays) {
-          const plays = Number.parseInt(metrics.video.plays);
+          const plays = Number.parseInt(metrics.video.plays, 10);
           if (Number.isInteger(plays)) {
             row.push(metrics.video.plays);
           } else {
@@ -113,7 +117,7 @@ module.exports = function (opts) {
         console.log('All labels have been processed');
         resolve();
       })
-      .on('error', (err) => {
+      .on('error', err => {
         reject(err);
       });
     });

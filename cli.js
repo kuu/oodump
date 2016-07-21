@@ -1,6 +1,7 @@
 const config = require('config');
 const argv = require('yargs').argv;
 const pkg = require('./package.json');
+
 const VERSION = `v${pkg.version}`;
 const HELP_TEXT = `
 Usage:
@@ -9,6 +10,7 @@ Usage:
 Example:
     oodump -v
     oodump total
+    oodump daily
     oodump daily --startDate 2016-01-01 --endDate 2016-06-30
 
 Options:
@@ -44,11 +46,16 @@ if (!config.api) {
   console.info(VERSION);
 } else {
   const dump = require('./lib');
+
   const command = argv._[0];
-  const opts = {
-    startDate: argv.startDate,
-    endDate: argv.endDate,
-    daily: command.toLowerCase() === 'daily'
-  };
-  dump(opts);
+  if (command) {
+    const opts = {
+      startDate: argv.startDate,
+      endDate: argv.endDate,
+      daily: command.toLowerCase() === 'daily'
+    };
+    dump(opts);
+  } else {
+    console.info(HELP_TEXT);
+  }
 }

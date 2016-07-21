@@ -7,7 +7,7 @@
     "oodump": "cli.js"
   },
   "scripts": {
-    "test": "node cli.js"
+    "test": "xo && node cli.js"
   },
   "repository": {
     "type": "git",
