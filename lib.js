@@ -16,7 +16,7 @@ module.exports = function (opts) {
 
   // Retrieves assets with a specific label
   const stream1 = createStream(1, function (label, enc, cb) {
-    api.get('/v2/assets', {where: `labels+INCLUDES+'${label.name}'`}, {pagination: true})
+    api.get('/v2/assets', {where: `labels+INCLUDES+'${label.name}'`}, {recursive: true})
     .then(assets => {
       assets.forEach(asset => {
         asset.label = label.name;
@@ -105,7 +105,7 @@ module.exports = function (opts) {
   });
 
   // Retrieves a list of labels
-  return api.get('/v2/labels', {limit: 500, is_root: true}, {pagination: true})
+  return api.get('/v2/labels', {limit: 500, is_root: true}, {recursive: true})
   .then(labels => {
     return new Promise((resolve, reject) => {
       fromArray.obj(labels)
