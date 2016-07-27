@@ -9,6 +9,12 @@ function createStream(concurrency, transformFunction, flushFunction) {
   return throughParallel.obj({concurrency}, transformFunction, flushFunction);
 }
 
+function extractMetadata(metadata) {
+  return `{ ${Object.keys(metadata).map(key => {
+    return `${key}: ${metadata[key]}`;
+  }).join(', ')} }`;
+}
+
 module.exports = function (opts) {
   const START_DATE = opts.startDate || '2012-07-12';
   const END_DATE = opts.endDate || '2016-06-30';
@@ -60,7 +66,7 @@ module.exports = function (opts) {
         label: asset.label,
         embedCode: asset.embed_code,
         title: asset.name,
-        id: asset.metadata.contents_id || asset.metadata.zip_id,
+        metadata: asset.metadata,
         performance
       });
       cb();
@@ -80,8 +86,8 @@ module.exports = function (opts) {
       currentLabel = asset.label;
       console.log(`=====<label="${currentLabel}">=====`);
     }
-    const {embedCode, title, id, performance} = asset;
-    const header = `[embedCode: "${embedCode}" id: "${id}" title: "${title}"],`;
+    const {embedCode, title, metadata, performance} = asset;
+    const header = `[embedCode: "${embedCode}" metadata: ${extractMetadata(metadata)} title: "${title}"],`;
     const row = [];
     if (performance) {
       performance.forEach(day => {
