@@ -10,9 +10,9 @@ function createStream(concurrency, transformFunction, flushFunction) {
 }
 
 function extractMetadata(metadata) {
-  return `{ ${Object.keys(metadata).map(key => {
+  return `${Object.keys(metadata).map(key => {
     return `${key}: ${metadata[key]}`;
-  }).join(', ')} }`;
+  }).join(', ')}`;
 }
 
 module.exports = function (opts) {
@@ -20,25 +20,40 @@ module.exports = function (opts) {
   const END_DATE = opts.endDate || '2016-06-30';
   const isDaily = Boolean(opts.daily);
 
-  // Retrieves assets with a specific label
-  const stream1 = createStream(1, function (label, enc, cb) {
-    api.get('/v2/assets', {where: `labels+INCLUDES+'${label.name}'`}, {recursive: true})
-    .then(assets => {
-      assets.forEach(asset => {
-        asset.label = label.name;
-        this.push(asset);
-      });
+  // Retrieves children of a root label
+  const stream1 = createStream(1, function (rootLabel, enc, cb) {
+    api.get(`/v2/labels/${rootLabel.id}/children`, {limit: 500}, {recursive: true})
+    .then(labels => {
+      this.push(rootLabel);
+      labels.forEach(label => this.push(label));
       cb();
     })
     .catch(err => {
       console.error(`stream1: An error occurred at ${err.stack}`);
       cb();
     });
+    // console.log(`Retrieves children of a root label: "${label.name}"`);
+  });
+
+  // Retrieves assets with a specific label
+  const stream2 = createStream(1, function (label, enc, cb) {
+    api.get('/v2/assets', {where: `labels+INCLUDES+'${label.name}'`}, {recursive: true})
+    .then(assets => {
+      assets.forEach(asset => {
+        asset.label = label.full_name;
+        this.push(asset);
+      });
+      cb();
+    })
+    .catch(err => {
+      console.error(`stream2: An error occurred at ${err.stack}`);
+      cb();
+    });
     // console.log(`Retrives assets with a label: "${label.name}"`);
   });
 
   // Retrieves metadata of an asset
-  const stream2 = createStream(5, function (asset, enc, cb) {
+  const stream3 = createStream(5, function (asset, enc, cb) {
     api.get(`/v2/assets/${asset.embed_code}/metadata`)
     .then(metadata => {
       asset.metadata = metadata;
@@ -46,14 +61,14 @@ module.exports = function (opts) {
       cb();
     })
     .catch(err => {
-      console.error(`stream2: An error occurred at ${err.stack}`);
+      console.error(`stream3: An error occurred at ${err.stack}`);
       cb();
     });
     // console.log(`Retrives metadata of an asset: "${asset.name}"`);
   });
 
   // Retrieves daily performance of an asset
-  const stream3 = createStream(5, function (asset, enc, cb) {
+  const stream4 = createStream(5, function (asset, enc, cb) {
     const requestURL = `/v2/analytics/reports/asset/${asset.embed_code}/performance/total/${START_DATE}...${END_DATE}`;
     const flags = isDaily ? {breakdown_by: 'day'} : {};
     api.get(requestURL, flags)
@@ -72,7 +87,7 @@ module.exports = function (opts) {
       cb();
     })
     .catch(err => {
-      console.error(`stream3: An error occurred at ${err.stack}`);
+      console.error(`stream4: An error occurred at ${err.stack}`);
       cb();
     });
     // console.log(`Retrives daily performance of an asset: "${asset.name}"`);
@@ -81,13 +96,13 @@ module.exports = function (opts) {
   let currentLabel;
 
   // Writes to destination
-  const stream4 = createStream(5, (asset, enc, cb) => {
+  const stream5 = createStream(5, (asset, enc, cb) => {
     if (currentLabel !== asset.label) {
       currentLabel = asset.label;
       console.log(`=====<label="${currentLabel}">=====`);
     }
     const {embedCode, title, metadata, performance} = asset;
-    const header = `[embedCode: "${embedCode}" metadata: ${extractMetadata(metadata)} title: "${title}"],`;
+    const header = `{embedCode: "${embedCode}", metadata: {${extractMetadata(metadata)}} title: "${title}"}`;
     const row = [];
     if (performance) {
       performance.forEach(day => {
@@ -106,7 +121,7 @@ module.exports = function (opts) {
     } else {
       row.push('0');
     }
-    console.log(`${header} ${row.join(', ')}`);
+    console.log(`[${header}, ${row.join(', ')}],`);
     cb();
   });
 
@@ -119,6 +134,7 @@ module.exports = function (opts) {
       .pipe(stream2)
       .pipe(stream3)
       .pipe(stream4)
+      .pipe(stream5)
       .on('finish', () => {
         console.log('All labels have been processed');
         resolve();
