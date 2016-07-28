@@ -1,11 +1,10 @@
 # oodump
+A tool for dumping Ooyala v2 analytics data per asset/label
 
 ## Install
-First, install Node.js (version 6) on your system.
+First, install Node.js (version 6+) on your system.
 ```
-$ git clone git@github.com:kuu/oodump.git
-$ cd oodump
-$ npm install
+$ npm install -g oodump
 ```
 
 ## Configure
@@ -26,12 +25,12 @@ Edit `config/default.json` as follows:
 ## CLI
 ```
 Usage:
-    npm test [options] command [parameters]
+    oodump [options] command [parameters]
 
 Example:
-    npm test total
-    npm test daily
-    npm test daily --startDate 2016-01-01 --endDate 2016-06-30
+    oodump total
+    oodump daily
+    oodump daily --startDate 2016-01-01 --endDate 2016-06-30
 
 Options:
   -h, --help    Print help
