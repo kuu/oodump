@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const config = require('config');
 const argv = require('yargs').argv;
 const pkg = require('./package.json');
