@@ -1,6 +1,6 @@
 {
   "name": "oodump",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A tool for dumping Ooyala v2 analytics data per asset/label",
   "main": "index.js",
   "bin": {
