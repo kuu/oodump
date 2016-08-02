@@ -28,9 +28,9 @@
   "dependencies": {
     "config": "^1.21.0",
     "from2-array": "0.0.4",
+    "minimist": "^1.2.0",
     "ooyala-api": "^0.2.1",
-    "through2-parallel": "^0.1.3",
-    "yargs": "^4.8.1"
+    "through2-parallel": "^0.1.3"
   },
   "engines": {
     "node": ">=6.0.0"

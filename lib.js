@@ -5,6 +5,10 @@ const fromArray = require('from2-array');
 
 const api = new OoyalaApi(config.api.key, config.api.secret);
 
+const MAX_CONCURRENCY = 10;
+const concurrencies = (config.concurrencies || [1, 1, 2, 2, 2])
+  .map(concurrency => Math.min(concurrency, MAX_CONCURRENCY));
+
 function createStream(concurrency, transformFunction, flushFunction) {
   return throughParallel.obj({concurrency}, transformFunction, flushFunction);
 }
@@ -21,7 +25,7 @@ module.exports = function (opts) {
   const isDaily = Boolean(opts.daily);
 
   // Retrieves children of a root label
-  const stream1 = createStream(1, function (rootLabel, enc, cb) {
+  const stream1 = createStream(concurrencies[0], function (rootLabel, enc, cb) {
     api.get(`/v2/labels/${rootLabel.id}/children`, {limit: 500}, {recursive: true})
     .then(labels => {
       this.push(rootLabel);
@@ -36,7 +40,7 @@ module.exports = function (opts) {
   });
 
   // Retrieves assets with a specific label
-  const stream2 = createStream(1, function (label, enc, cb) {
+  const stream2 = createStream(concurrencies[1], function (label, enc, cb) {
     api.get('/v2/assets', {where: `labels+INCLUDES+'${label.name}'`}, {recursive: true})
     .then(assets => {
       assets.forEach(asset => {
@@ -53,7 +57,7 @@ module.exports = function (opts) {
   });
 
   // Retrieves metadata of an asset
-  const stream3 = createStream(5, function (asset, enc, cb) {
+  const stream3 = createStream(concurrencies[2], function (asset, enc, cb) {
     api.get(`/v2/assets/${asset.embed_code}/metadata`)
     .then(metadata => {
       asset.metadata = metadata;
@@ -68,7 +72,7 @@ module.exports = function (opts) {
   });
 
   // Retrieves daily performance of an asset
-  const stream4 = createStream(5, function (asset, enc, cb) {
+  const stream4 = createStream(concurrencies[3], function (asset, enc, cb) {
     const requestURL = `/v2/analytics/reports/asset/${asset.embed_code}/performance/total/${START_DATE}...${END_DATE}`;
     const flags = isDaily ? {breakdown_by: 'day'} : {};
     api.get(requestURL, flags)
@@ -96,7 +100,7 @@ module.exports = function (opts) {
   let currentLabel;
 
   // Writes to destination
-  const stream5 = createStream(5, (asset, enc, cb) => {
+  const stream5 = createStream(concurrencies[4], (asset, enc, cb) => {
     if (currentLabel !== asset.label) {
       currentLabel = asset.label;
       console.log(`=====<label="${currentLabel}">=====`);

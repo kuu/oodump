@@ -18,7 +18,8 @@ Edit `config/default.json` as follows:
   "api": {
     "key": {Your Ooyala API Key},
     "secret": {Your Ooyala API Secret}
-  }
+  },
+  "concurrencies": [1, 1, 5, 5, 5]
 }
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const config = require('config');
-const argv = require('yargs').argv;
+const argv = require('minimist')(process.argv.slice(2));
 const pkg = require('./package.json');
 
 const VERSION = `v${pkg.version}`;
@@ -35,7 +35,8 @@ Please put config file(s) in your work directory.
    "api": {
      "key":        {Your Ooyala API Key},
      "secret":     {Your Ooyala API Secret}
-   }
+   },
+   "concurrencies": [1, 1, 5, 5, 5]
  }
 `;
 
